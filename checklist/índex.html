@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Checklist Pensador Guerrero</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0b0f14">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+:root{
+  --bg:#0b0f14;
+  --card:#121925;
+  --text:#e8eef7;
+  --muted:#9fb0c4;
+  --ok:#36d399;
+  --warn:#fbbf24;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+  background:radial-gradient(1200px 700px at 10% 10%, #132033 0%, var(--bg) 55%);
+  color:var(--text);
+  padding:16px;
+}
+.wrap{max-width:520px;margin:0 auto}
+.card{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:14px;
+  margin:12px 0;
+}
+h1{font-size:18px;margin:0 0 6px}
+.sub{font-size:12px;color:var(--muted)}
+.row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.row:first-child{border-top:0}
+label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--ok)}
+button{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(54,211,153,.15);
+  color:var(--text);
+  font-weight:600;
+  margin-top:10px;
+}
+.kpi{
+  display:flex;
+  gap:10px;
+  margin-top:6px;
+  flex-wrap:wrap;
+}
+.pill{
+  background:rgba(255,255,255,.08);
+  padding:6px 10px;
+  border-radius:12px;
+  font-size:12px;
+}
+.ok{color:var(--ok);font-weight:600}
+.warn{color:var(--warn);font-weight:600}
+.footer{font-size:12px;color:var(--muted);margin-top:10px}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<h1>📱 Checklist Pensador Guerrero</h1>
+<div class="sub" id="dateLine"></div>
+
+<div class="kpi">
+  <div class="pill">🔥 Racha: <b id="streak">0</b></div>
+  <div class="pill">🕒 Límite: <b id="limitLabel">21:30</b></div>
+</div>
+
+<div class="card">
+<div class="sub">Regla: no fallar dos días seguidos.</div>
+</div>
+
+<div class="card">
+
+<div class="row">
+<label>
+<input type="checkbox" id="body">
+<div>🥊 Cuerpo (mínimo 10 min)</div>
+</label>
+</div>
+
+<div class="row">
+<label>
+<input type="checkbox" id="project">
+<div>💻 Proyecto / mente (mínimo 5 min)</div>
+</label>
+</div>
+
+<div class="row">
+<label>
+<input type="checkbox" id="noNightEat">
+<div>🍽️ No comer después de la hora límite</div>
+</label>
+</div>
+
+<div class="row">
+<label>
+<input type="checkbox" id="discomfort">
+<div>⚔️ 1 acto de incomodidad</div>
+</label>
+</div>
+
+<div class="row">
+<label>
+<input type="checkbox" id="winDay">
+<div>🏆 Hoy he ganado el día</div>
+</label>
+</div>
+
+<div id="status" class="footer"></div>
+
+<button id="resetBtn">Reset hoy</button>
+
+</div>
+
+<div class="card">
+<div class="footer">
+<b>“Domino el impulso. Refuerzo el carácter.”</b>
+</div>
+</div>
+
+</div>
+
+<script>
+// ===== helpers =====
+const todayKey=()=>{
+  const d=new Date();
+  return d.toISOString().slice(0,10);
+};
+
+const STORAGE="pg_checklist_v1";
+
+function load(){
+  try{return JSON.parse(localStorage.getItem(STORAGE))}catch{return null}
+}
+
+function save(s){
+  localStorage.setItem(STORAGE,JSON.stringify(s));
+}
+
+function defaultState(){
+  return{
+    date:todayKey(),
+    streak:0,
+    checks:{body:false,project:false,noNightEat:false,discomfort:false,winDay:false},
+    limit:"21:30"
+  };
+}
+
+let state=load()||defaultState();
+
+// reset diario
+if(state.date!==todayKey()){
+  if(!state.checks.winDay) state.streak=0;
+  state.date=todayKey();
+  state.checks={body:false,project:false,noNightEat:false,discomfort:false,winDay:false};
+}
+
+// ===== UI =====
+const els={
+  body:body,
+  project:project,
+  noNightEat:noNightEat,
+  discomfort:discomfort,
+  winDay:winDay,
+  streak:streak,
+  status:status,
+  dateLine:dateLine,
+  limitLabel:limitLabel
+};
+
+function refresh(){
+  els.body.checked=state.checks.body;
+  els.project.checked=state.checks.project;
+  els.noNightEat.checked=state.checks.noNightEat;
+  els.discomfort.checked=state.checks.discomfort;
+  els.winDay.checked=state.checks.winDay;
+
+  els.streak.textContent=state.streak;
+  els.limitLabel.textContent=state.limit;
+  els.dateLine.textContent=new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+
+  const done=[
+    state.checks.body,
+    state.checks.project,
+    state.checks.noNightEat,
+    state.checks.discomfort
+  ].filter(Boolean).length;
+
+  els.status.innerHTML=done===4
+    ? '<span class="ok">Listo para marcar día ganado</span>'
+    : '<span class="warn">'+done+'/4 bloques</span>';
+}
+
+function update(){
+  state.checks.body=els.body.checked;
+  state.checks.project=els.project.checked;
+  state.checks.noNightEat=els.noNightEat.checked;
+  state.checks.discomfort=els.discomfort.checked;
+
+  const all4=state.checks.body&&state.checks.project&&state.checks.noNightEat&&state.checks.discomfort;
+
+  if(els.winDay.checked && all4 && !state.checks.winDay){
+    state.streak++;
+    state.checks.winDay=true;
+  }else if(!els.winDay.checked){
+    state.checks.winDay=false;
+  }
+
+  save(state);
+  refresh();
+}
+
+body.onchange=update;
+project.onchange=update;
+noNightEat.onchange=update;
+discomfort.onchange=update;
+winDay.onchange=update;
+
+resetBtn.onclick=()=>{
+  state.checks={body:false,project:false,noNightEat:false,discomfort:false,winDay:false};
+  save(state);
+  refresh();
+};
+
+refresh();
+
+// ===== SERVICE WORKER =====
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js");
+  });
+}
+</script>
+
+</body>
+</html>
